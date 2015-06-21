@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Dukebox v2.7.4 2015-05-08
+# Dukebox 2015-06-20
 
 import dukebox_graphics
 
@@ -19,7 +19,11 @@ import pprint
 class player:
 	def __init__(self,server):
 		# Parameters
-		self.config_dir = os.path.expanduser("~")+"/.dukebox/"
+		if os.path.expanduser("~")<>"/root":
+			self.config_dir = os.path.expanduser("~")+"/.dukebox/"
+		else:
+			# Nasty hack for running dukebox_hard as root
+			self.config_dir = "/home/pi/.dukebox/"
 		self.server = server
 		self.create_time = time.time()
 		self.read_config()
@@ -59,11 +63,13 @@ class player:
 		self.sort_albums = list(self.albums)
 		self.album_art_stub = ""
 		self.track_lengths = []
-
+		
 		seed()
 		shuffle(self.albums)
+		self.set_radio_stations()
+		print "+ Music lists read: "+str(len(self.albums))+" local albums and "+str(len(self.radio_stations))+" radio stations."
 		
-		print "+ Album list read: "+str(len(self.albums))
+		self.speak_lock = False
 
 
 	def __del__(self):
@@ -134,7 +140,6 @@ class player:
 		
 		# Read specific config file for this server
 		server_config = self.config_dir+self.server
-		print server_config
 		if os.path.isfile(server_config):
 			for line in open(server_config):
 				if line[0]!="#":
@@ -170,7 +175,7 @@ class player:
 			self.genre = genre
 			self.mode = mode
 			
-		elif mode=="album" or mode=="radio":
+		elif mode=="album":
 			if genre=="All":
 				self.some_albums = list(self.albums)
 				# Increment counter down through list
@@ -205,7 +210,14 @@ class player:
 				self.mode = mode
 			else:
 				print "# No albums in genre "+genre
-
+		elif mode=="radio":
+			self.i["radio"]=self.i["radio"]+1
+			if self.i["radio"]>len(self.radio_stations)-1:
+				self.i["radio"]=0
+			self.play_radio(self.radio_stations[self.i["radio"]])
+		else:
+			print "Unknown mode: ",self.mode()
+			
 		# Speaking done like this to allow display update first - TODO threads
 		#self.display.update(self.c.currentsong(),self.c.status(),self.get_battery_level(),self)
 		if test_speak_mode:
@@ -239,7 +251,17 @@ class player:
 
 			if len(self.some_albums)>0:
 				self.play_album(self.some_albums[self.i[self.genre]][2],self.some_albums[self.i[self.genre]][1])
-	
+		elif self.mode=="track":
+			#TODO
+			pass
+		elif self.mode=="radio":
+			self.i["radio"]=self.i["radio"]+1
+			if self.i["radio"]<0:
+					self.i["radio"]=len(self.radio_stations)-1
+			self.play_radio(self.radio_stations[self.i["radio"]])
+		else:
+			print "Unknown mode: ",self.mode()
+			
 	
 	def text_search(self,d):
 		# Interface for searching albums
@@ -290,18 +312,38 @@ class player:
 		return True
 
 
-	def play_radio(self):
-		self.save_state()
-		self.speak("Attempting to play radio")
-		# TODO - options for different stations
-		f=urllib.urlopen("http://www.radiofeeds.co.uk/bbc6music.pls")
-		s=f.read()
-		f.close()
-		url=""
-		# Grep File1
-		for l in s.split("\n"):
-			if "File1=" in l:
-				url=l.split("?")[0].replace("File1=","")
+	def set_radio_stations(self):
+		self.radio_stations = []
+		
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio1.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio2.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio3.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio4fm.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio4lw.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio4extra.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio5live.pls")
+		#self.radio_stations.append("http://www.radiofeeds.co.uk/bbcradio5livesportsextra.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbc6music.pls")
+		self.radio_stations.append("http://www.radiofeeds.co.uk/bbcsussex2.pls")
+		self.radio_stations.append("http://icecast.timlradio.co.uk/a8128.mp3.m3u")
+				
+		self.i["radio"] = 7
+				
+
+	def play_radio(self,station):
+		# Look up current URL
+		if station[-4:]==".pls":
+			# Link to BBC link - deconstruct
+			f = urllib.urlopen(station)
+			s = f.read()
+			f.close()
+			url=""
+			# Grep File1
+			for l in s.split("\n"):
+				if "File1=" in l:
+					url=l.split("?")[0].replace("File1=","")
+		else:
+			url = station
 				
 		if url!="":
 			print "+ Playing: "+url
@@ -312,7 +354,7 @@ class player:
 			self.mode="radio"
 		
 		else:
-			self.speak("Could not find radio feed")
+			self.speak("Could not find radio feed: "+station)
 
 
 	def play_album(self,album,artist):
@@ -336,10 +378,10 @@ class player:
 		# Save current state
 		self.last_mode   = self.mode
 		self.last_genre  = self.genre
-		self.last_album  = temp.get("album")
-		self.last_artist = temp.get("artist")
-		self.last_song   = temp.get("pos")
-		self.last_time 	 = status.get("elapsed")
+		self.last_album  = temp.get("album","")
+		self.last_artist = temp.get("artist","")
+		self.last_song   = temp.get("pos","")
+		self.last_time 	 = status.get("elapsed","")
 	
 	
 	def undo(self):
@@ -376,6 +418,7 @@ class player:
 		self.track_lengths = []
 		self.track_names = []
 		for track in self.c.playlistid():
+			print track.get("time","")
 			self.track_lengths.append(float(track.get("time","")))
 			self.track_names.append(track.get("title",""))
 

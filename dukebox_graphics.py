@@ -79,36 +79,37 @@ class display:
 			text = self.font2.render(song.get("album","").decode("utf-8"),True,self.colour['white'],self.colour['black'])
 			self.surf.blit(text,((tx-text.get_width()-gap2,y+py)))
 
-			# Track position
-			t = player.track_lengths
-			total_t = sum(t)
-			if total_t==0:
-				player.generate_track_lengths()
+			if self.mode<>"radio":
+				# Track position
+				t = player.track_lengths
 				total_t = sum(t)
+				if total_t==0:
+					player.generate_track_lengths()
+					total_t = sum(t)
 				
-			y = y+dy+gap1
-			dy = 20
-			if status.get("elapsed","") and song.get("time",""):
-				# Background for track time elapsed
-				dx = int(tx*float(status.get("elapsed"))/float(song.get("time")))
-				s = pyg.Surface((tx,dy))
-				s.fill(self.colour['grey'])
-				self.surf.blit(s, (0,y))
-				# Track time elapsed
-				s = pyg.Surface((dx,dy))
-				if status.get("state")=="play":
-					s.fill(self.colour['green'])
-				else:
-					s.fill(self.colour['dark green'])
-				self.surf.blit(s, (0,y))
-				if player.graphics!="simple":
-					text = self.font3.render(convert_seconds(song.get("time"))+" / "+convert_seconds(total_t),True,self.colour['black'])
-					self.surf.blit(text, (gap1,y+dy/2-text.get_height()/2))
+				y = y+dy+gap1
+				dy = 20
+				if status.get("elapsed","") and song.get("time",""):
+					# Background for track time elapsed
+					dx = int(tx*float(status.get("elapsed"))/float(song.get("time")))
+					s = pyg.Surface((tx,dy))
+					s.fill(self.colour['grey'])
+					self.surf.blit(s, (0,y))
+					# Track time elapsed
+					s = pyg.Surface((dx,dy))
+					if status.get("state")=="play":
+						s.fill(self.colour['green'])
+					else:
+						s.fill(self.colour['dark green'])
+					self.surf.blit(s, (0,y))
+					if player.graphics!="simple":
+						text = self.font3.render(convert_seconds(song.get("time"))+" / "+convert_seconds(total_t),True,self.colour['black'])
+						self.surf.blit(text, (gap1,y+dy/2-text.get_height()/2))
 			
-			# Boxes for track number
-			y = y+dy+gap1
-			i = int(status.get("song",""))
-			n = int(status.get("playlistlength",""))
+				# Boxes for track number
+				y = y+dy+gap1
+				i = int(status.get("song",""))
+				n = int(status.get("playlistlength",""))
 						
 			if status.get("song","")!="":
 				dx = [0]*n
