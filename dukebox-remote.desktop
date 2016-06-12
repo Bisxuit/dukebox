@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Terminal=false
+Exec=python /home/tom/Code/Dukebox/dukebox.py 192.168.1.76
+
+Name=Dukebox remote
+Icon=/home/tom/Code/Dukebox/remote.png
+Name[en_GB]=Dukebox remote

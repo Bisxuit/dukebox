@@ -62,24 +62,29 @@ class display:
 		
 		# Start by working down
 		if status.get("state")!="stop":
-			# Track details
-			text = self.font1.render(song.get("title",song.get("name","NO TITLE")).decode("utf-8"),True,self.colour['white'])
-			self.surf.blit(text,(gap2,y))
-			dy = text.get_height()
-
-			# Artist details
-			if song.get("artist","").decode("utf-8")!="Various":
-				text = self.font2.render(song.get("artist","").decode("utf-8"),True,self.colour['white'],self.colour['black'])
-				self.surf.blit(text,(tx-text.get_width()-gap2,y))
-				py = text.get_height()
+			if player.mode=="radio":
+				# Just display station name
+				text = self.font1.render(player.radio_stations[player.i["radio"]][0].decode("utf-8"),True,self.colour['white'])
+				self.surf.blit(text,(gap2,y))
+				dy = text.get_height()
 			else:
-				py = 0
-			
-			# Album details
-			text = self.font2.render(song.get("album","").decode("utf-8"),True,self.colour['white'],self.colour['black'])
-			self.surf.blit(text,((tx-text.get_width()-gap2,y+py)))
+				# Track details
+				text = self.font1.render(song.get("title",song.get("name","NO TITLE")).decode("utf-8"),True,self.colour['white'])
+				self.surf.blit(text,(gap2,y))
+				dy = text.get_height()
 
-			if self.mode<>"radio":
+				# Artist details
+				if song.get("artist","").decode("utf-8")!="Various":
+					text = self.font2.render(song.get("artist","").decode("utf-8"),True,self.colour['white'],self.colour['black'])
+					self.surf.blit(text,(tx-text.get_width()-gap2,y))
+					py = text.get_height()
+				else:
+					py = 0
+				
+				# Album details
+				text = self.font2.render(song.get("album","").decode("utf-8"),True,self.colour['white'],self.colour['black'])
+				self.surf.blit(text,((tx-text.get_width()-gap2,y+py)))
+			
 				# Track position
 				t = player.track_lengths
 				total_t = sum(t)
@@ -105,54 +110,55 @@ class display:
 					if player.graphics!="simple":
 						text = self.font3.render(convert_seconds(song.get("time"))+" / "+convert_seconds(total_t),True,self.colour['black'])
 						self.surf.blit(text, (gap1,y+dy/2-text.get_height()/2))
-			
+
 				# Boxes for track number
 				y = y+dy+gap1
 				i = int(status.get("song",""))
 				n = int(status.get("playlistlength",""))
-						
-			if status.get("song","")!="":
-				dx = [0]*n
-				dy = 20
-				if len(t)==n:
-					# Track lengths probably match current playlist
-					for i_x in range(0,n):
-						dx[i_x] = float(tx)*t[i_x]/total_t
-				else:
-					# Track lengths don't match current playlist
-					dx = [float(tx)/n]*n
-				
-				if player.mode=="album":# and min(dx)>gap1:
-					# Album mode
-					for i_x in range(0,n):
-						# Box for each track
-						s = pyg.Surface((max(dx[i_x]-gap1,1),dy))
-						if i_x==i:
-							s.fill(self.colour['green'])
-						elif i_x<i:
-							s.fill(self.colour['dark green'])
-						else:
-							s.fill(self.colour['grey'])
-						if player.graphics!="simple" and i_x!=i:
-							text = self.font3.render(player.track_names[i_x],True,self.colour['white'])
-							s.blit(text,(gap1,0))
-						self.surf.blit(s, (int(sum(dx[:i_x])+gap1/2),y))
-				else:
-					# Track or radio mode - continuous bar
-					s = pyg.Surface((tx,dy))
-					s.fill(self.colour['grey'])
-					self.surf.blit(s, (0,y))
-					if player.mode=="radio":					
-						text = self.font2.render('Live radio',True,self.colour['white'])
+							
+				if status.get("song","")!="":
+					dx = [0]*n
+					dy = 20
+					if len(t)==n:
+						# Track lengths probably match current playlist
+						for i_x in range(0,n):
+							dx[i_x] = float(tx)*t[i_x]/total_t
 					else:
-						if player.genre=="All":
-							text = self.font3.render('All tracks queued ('+str(n)+")",True,self.colour['white'])
+						# Track lengths don't match current playlist
+						dx = [float(tx)/n]*n
+					
+					if player.mode=="album":# and min(dx)>gap1:
+						# Album mode
+						for i_x in range(0,n):
+							# Box for each track
+							s = pyg.Surface((max(dx[i_x]-gap1,1),dy))
+							if i_x==i:
+								s.fill(self.colour['green'])
+							elif i_x<i:
+								s.fill(self.colour['dark green'])
+							else:
+								s.fill(self.colour['grey'])
+							if player.graphics!="simple" and i_x!=i:
+								text = self.font3.render(player.track_names[i_x],True,self.colour['white'])
+								s.blit(text,(gap1,0))
+							self.surf.blit(s, (int(sum(dx[:i_x])+gap1/2),y))
+					else:
+						# Track mode - continuous bar
+						s = pyg.Surface((tx,dy))
+						s.fill(self.colour['grey'])
+						self.surf.blit(s, (0,y))
+						if player.mode=="radio":					
+							text = self.font2.render('Live radio',True,self.colour['white'])
 						else:
-							text = self.font3.render('All '+player.genre+' tracks queued ('+str(n)+')',True,self.colour['white'])
-					self.surf.blit(text, (tx/2-text.get_width()/2,y+dy/2-text.get_height()/2))					
+							if player.genre=="All":
+								text = self.font3.render('All tracks queued ('+str(n)+")",True,self.colour['white'])
+							else:
+								text = self.font3.render('All '+player.genre+' tracks queued ('+str(n)+')',True,self.colour['white'])
+						self.surf.blit(text, (tx/2-text.get_width()/2,y+dy/2-text.get_height()/2))					
 
 			y = y+dy+gap2
 			# Display album art
+			# TODO - log if missing (or try and fetch)
 			stub = player.folder+".covers/"+song.get("artist","")+"-"+song.get("album","")
 			if player.album_art_stub!=stub:
 				try:
@@ -188,6 +194,7 @@ class display:
 		dy = 30
 		y = ty-dy
 		v = int(status.get("volume"))
+		# TODO - make triangular under battery indicator
 		if v>=0:
 			# Background bar
 			s = pyg.Surface((tx,dy))
@@ -300,6 +307,8 @@ class display:
 				text = self.font3.render(song.get("album","").decode("utf-8"),True,self.colour['white'],self.colour['black'])
 				st.blit(text,(x,y))
 				
+		
+		# TODO - bounce the clock, battery monitor, track info and album art around
 		self.surf.blit(st,(randrange(tx-dx),randrange(ty-dy)))
 		pyg.display.update()
 
