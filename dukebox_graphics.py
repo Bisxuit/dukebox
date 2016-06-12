@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# Dukebox v2.7.4 2015-05-08
+# Dukebox 2016-06-12
+# This file provides the display class for Dukebox.py for running a Pygame based MPD client
+
 import pygame as pyg
 import datetime
 import os
@@ -45,6 +47,11 @@ class display:
 		self.colour['green'] =(pyg.Color(0,255,0,128))		# green (Selected)
 		self.colour['grey']=(pyg.Color(64,64,64,128))		# grey (Button backgrounds)
 		self.colour['blue']=(pyg.Color(90,110,150,128))		# blue (system state)
+		
+		
+	def toggle_fullscreen(self):
+		# TODO - set fullscreen resolution
+		pyg.display.toggle_fullscreen()
 		
 		
 	def update(self,song,status,battery_level,player):

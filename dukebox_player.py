@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+# Dukebox 2016-06-12
+# This file is the main control panel for dukebox that is called by the other interfaces.
+# It adds a layer of functionality over MPD for playing albums by genre and including radio stations.
+# Used by:
+#	dukebox.py  - desktop interface
+#	dukeboxd.py - Pi daemon interface
+#	dukeboxt.py - Pi touch panel interface
+
 from mpd import MPDClient
 
 import pygame as pyg
@@ -20,7 +28,7 @@ class player:
 		if os.path.expanduser("~")<>"/root":
 			self.config_dir = os.path.expanduser("~")+"/.dukebox/"
 		else:
-			# Nasty hack for running dukebox_hard as root
+			# Nasty hack for running dukeboxd as root
 			self.config_dir = "/home/pi/.dukebox/"
 		self.server = server
 		self.create_time = time.time()
@@ -584,10 +592,6 @@ class player:
 		pp.pprint(self.c.status())
 		pp.pprint(self.c.currentsong())
 		
-
-	def toggle_fullscreen(self):
-		pyg.display.toggle_fullscreen()
-
 
 	def set_graphics_mode(self):
 		if self.graphics == "simple":

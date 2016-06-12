@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+# Dukebox 2016-06-12
+# This file is the Raspberry Pi interface daemon that enables MPD control using GPIO pins attached to buttons.
+
+
 import os,sys,time
 
 pid_file = "/home/pi/.dukebox/pid"

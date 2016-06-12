@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# Dukebox 2015-06-20
+# Dukebox 2016-06-12
+# This file is the main desktop interface that launches a pygame window to interact with an MPD server.
+
 
 import dukebox_player
 import dukebox_graphics
@@ -50,8 +52,8 @@ def event_handler(p,d,this_event):
 		return 0
 	elif this_event.type==pyg.VIDEORESIZE:
 		# Screen resize event
-		p.size = this_event.dict['size']
-		screen = pyg.display.set_mode(p.size,pyg.RESIZABLE)
+		d.size = this_event.dict['size']
+		screen = pyg.display.set_mode(d.size,pyg.RESIZABLE)
 		d.update(p.c.currentsong(),p.c.status(),p.get_battery_level(),p)
 	elif this_event.type==pyg.KEYUP:
 		pass
@@ -73,7 +75,7 @@ def event_handler(p,d,this_event):
 			p.mode = "radio"
 			p.advance(p.mode,p.genre)
 		elif this_event.key==pyg.K_f:
-			p.toggle_fullscreen()
+			d.toggle_fullscreen()
 		elif this_event.key==pyg.K_g:
 			# Toggle simple graphics
 			p.set_graphics_mode()
