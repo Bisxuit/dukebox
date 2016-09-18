@@ -1,12 +1,16 @@
 #!/usr/bin/env python
+
 # Dukebox 2016-06-12
-# This file provides the display class for Dukebox.py for running a Pygame based MPD client
+# Provides the display class for Dukebox.py for running a Pygame based MPD client
 
 import pygame as pyg
 import datetime
+import time
 import os
 import math
 from random import randrange
+import dukebox_scanner
+import dukebox_player
 
 class touchme:
 	def __init__(self):
@@ -24,16 +28,17 @@ class touchme:
 		self.surf = pyg.display.get_surface()
 		self.surf.fill(self.colour['black'])
 		
-		
-		import dukebox_player
-		self.music = dukebox_player.player("localhost")
+		self.music = dukebox_player.player("192.168.1.76")
+
+		# Network scanner client
+		# Just read the text file output by cron job (possibly on another device), as sudo is needed		
+		self.scanner = 	dukebox_scanner.scanner()
+		self.scanner.read_name_lookup()
 		
 		# Nest client
 		self.nest = heatme()
-	
-		# Network scanner client
-		self.network = stalkme()
-	
+		
+		
 	def __del__(self):	
 		# Quit pygame
 		pyg.quit()
@@ -68,9 +73,23 @@ class touchme:
 		s.fill(self.colour['grey'])
 		self.surf.blit(s, (0,0))
 		
-		
 		# Top left - time
-		st = pyg.Surface((tx/2,ty/2))
+		self.surf.blit(self.display_time(tx/2,ty/2),(0,0))
+		
+		# Top right - Nest status
+		self.surf.blit(self.display_nest(tx/2,ty/2),(tx/2,0))
+		
+		# Bottom left - network scanner
+		self.surf.blit(self.display_scanner(tx/2,ty/2),(0,ty/2))
+		
+		# Bottom right - MPD status
+		self.surf.blit(self.display_music(tx/2,ty/2),(tx/2,ty/2))
+		
+		pyg.display.update()
+	
+	
+	def display_time(self,tx,ty):
+		st = pyg.Surface((tx,ty))
 		st.fill(self.colour['grey'])
 		
 		text = self.font60.render(str(datetime.datetime.now().strftime("%H:%M")),True,self.colour['white'])
@@ -84,12 +103,54 @@ class touchme:
 		textpos.centerx = st.get_rect().centerx
 		textpos.y = dy
 		st.blit(text, textpos)
-		self.surf.blit(st,(0,0))
+		return st
 		
+	
+	def display_scanner(self,tx,ty):
+		st = pyg.Surface((tx,ty))
+		st.fill(self.colour['blue']) #set colour on status
+		y = 5
 		
-		# Top right - Nest status
+		t = time.time()
+		# Blit picture in colour or grayscale with time away
+		for mac in self.scanner.machines:
+			time_away  = self.scanner.last_seen[mac]-t+3600 # Nasty hack to sort out timezones (Pi doesn't seem to do it correctly)
+			if self.scanner.names[mac][0]<>"." and time_away<24*60*10:
+				
+				stub = self.scanner.names[mac]+".jpg"
+				#if player.album_art_stub!=stub:
+				#try:
+				if os.path.isfile(stub):
+					img_art = pyg.image.load(stub).convert()
+				else:
+					img_art=pyg.Surface((1,1))
+				#except:
+				#	print "# Could not load",stub
+				#	player.img_art=pyg.Surface((1,1))
+				#player.album_art_stub = stub
+				
+				img_art = pyg.transform.scale(img_art, (30, 40))
+				
+				# Output to display	
+				st.blit(img_art,(5,y))
+								
+				text = self.font12.render(self.scanner.names[mac],True,self.colour['white'])
+				st.blit(text,(45,y))
+				y = y+text.get_height()
+				
+				if time_away<60*10:
+					text = self.font12.render('Here',True,self.colour['white'])
+				else:
+					text = self.font12.render('{:0.0f}'.format(time_away),True,self.colour['white'])
+					
+				st.blit(text,(45,y))
+				y = y+45
+		return st		
+	
+	
+	def display_nest(self,tx,ty):
 		y = 20
-		st = pyg.Surface((tx/2,ty/2))
+		st = pyg.Surface((tx,ty))
 		st.fill(self.colour['dark red']) #set colour from heat on/off
 		text = self.font40.render(self.nest.temp,True,self.colour['white'])
 		textpos = text.get_rect()
@@ -102,22 +163,13 @@ class touchme:
 		textpos.centerx = st.get_rect().centerx
 		textpos.y = y+dy
 		st.blit(text, textpos)
-		self.surf.blit(st,(tx/2,0))
+		return st
 		
-		
-		# Bottom left - person status
-		st = pyg.Surface((tx/2,ty/2))
-		st.fill(self.colour['blue']) #set colour on status
-		# Blit picture in colour or grayscale with time away
-		text = self.font12.render(self.network.tom,True,self.colour['white'])
-		st.blit(text,(0,0))
-		self.surf.blit(st,(0,ty/2))
-		
-		
-		# Bottom right - MPD status
+	
+	def display_music(self,tx,ty):
 		song = self.music.c.currentsong()
 		status = self.music.c.status()
-		st = pyg.Surface((tx/2,ty/2))
+		st = pyg.Surface((tx,ty))
 		st.fill(self.colour['black'])
 		if status.get("state")!="stop":
 			title = song.get("title",song.get("name","NO TITLE")).decode("utf-8")
@@ -136,12 +188,13 @@ class touchme:
 			text = self.font12.render(title,True,self.colour['white'])
 			st.blit(text,(5,y))
 			y = y+text.get_height()
-		
+			
+			dy = 0
 			# Track bar
 			if status.get("elapsed","") and song.get("time",""):
-				dx = int((tx/2)*float(status.get("elapsed"))/float(song.get("time")))
+				dx = int((tx)*float(status.get("elapsed"))/float(song.get("time")))
 				dy = 10
-				s = pyg.Surface((tx/2,dy))
+				s = pyg.Surface((tx,dy))
 				s.fill(self.colour['grey'])
 				st.blit(s, (0,y))
 				# Track time elapsed
@@ -173,10 +226,10 @@ class touchme:
 				if len(t)==n:
 					# Track lengths probably match current playlist
 					for i_x in range(0,n):
-						dx[i_x] = float(tx/2)*t[i_x]/total_t
+						dx[i_x] = float(tx)*t[i_x]/total_t
 				else:
 					# Track lengths don't match current playlist
-					dx = [float(tx/2)/n]*n
+					dx = [float(tx)/n]*n
 					
 				if self.music.mode=="album":# and min(dx)>gap1:
 					# Album mode
@@ -192,21 +245,17 @@ class touchme:
 							s.fill(self.colour['grey'])
 						st.blit(s, (int(sum(dx[:i_x])+gap1/2),y))
 			
-		
-			
 		if status.get("state")=="pause":
 			# Pause icon
-			dy = int(ty/4)
+			dy = int(ty/2)
 			dx = int(dy/4)
 			s = pyg.Surface((dx,dy))
 			s.fill(self.colour['white'])
-			st.blit(s, (int(tx/4-1.5*dx),int(dy/2)))
-			st.blit(s, (int(tx/4+0.5*dx),int(dy/2)))
-		self.surf.blit(st,(tx/2,ty/2))
+			st.blit(s, (int(tx/2-1.5*dx),int(dy/2)))
+			st.blit(s, (int(tx/2+0.5*dx),int(dy/2)))
 		
-		pyg.display.update()
+		return st
 
-		
 
 class heatme:
 	def __init__(self):
@@ -214,13 +263,6 @@ class heatme:
 	def update(self):
 		self.temp = "20"+u'\N{DEGREE SIGN}'+"C"
 
-
-class stalkme:
-	def __init__(self):
-		self.tom = "Here"
-	def update(self):
-		self.tom = "Here"
-		
 
 def event_handler(d,this_event):
 	if this_event.type==pyg.QUIT:
@@ -242,10 +284,10 @@ def main():
 	# Display client
 	d = touchme()
 	d.update()
-					
+						
 	# Main loop - basically just waiting for key events
 	last_t = 0
-	update_time = 500
+	update_time = 1000
 	running = True
 	while running:
 		for this_event in pyg.event.get():
@@ -258,9 +300,9 @@ def main():
 		t = pyg.time.get_ticks()
 		if t-last_t>update_time:
 			last_t = t
-		
-		d.update()
-	
+			d.scanner.read_log()
+			d.update()
+
 
 if __name__ == '__main__':
 	main()

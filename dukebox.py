@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Dukebox 2016-06-12
 # This file is the main desktop interface that launches a pygame window to interact with an MPD server.
 
@@ -10,7 +11,7 @@ import sys
 	
 	
 # TODO - disconnection behaviour (won't exit)
-# BUG - sometimes only musical albums are queued on startup
+# BUG - sometimes only musical albums are queued on startup (randomise not working properly)
 
 
 def main(server):
@@ -42,6 +43,8 @@ def main(server):
 				# Reduce processor load
 				pyg.time.wait(1000)
 			else:
+				# Will hang here if connection lost
+				# TODO - separate thread to keep track of connection
 				d.update(p.c.currentsong(),p.c.status(),p.get_battery_level(),p)
 
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Dukebox 2016-06-12
 # This file is the main control panel for dukebox that is called by the other interfaces.
 # It adds a layer of functionality over MPD for playing albums by genre and including radio stations.
@@ -173,7 +174,7 @@ class player:
 			self.c.clear()
 			#TODO - sub
 			if genre=="All":
-				self.c.add("/")			
+				self.c.add("")
 			else:
 				self.c.findadd("genre",genre)
 			self.c.random(1)
@@ -574,12 +575,13 @@ class player:
 		status = self.c.status()
 		if status.get('state')!="stop":
 			volume = int(status.get("volume"))
-			volume+=delta_vol
-			if volume>100:
-				volume = 100
-			elif volume<0:
-				volume=0
-			self.c.setvol(volume)
+			if volume!=-1:
+				volume+=delta_vol
+				if volume>100:
+					volume = 100
+				elif volume<0:
+					volume=0
+				self.c.setvol(volume)
 		
 		
 	def output_stats(self):
