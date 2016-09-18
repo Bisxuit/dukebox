@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Dukebox 2016-06-12
 # This file provides the display class for Dukebox.py for running a Pygame based MPD client
 
@@ -12,6 +13,7 @@ class display:
 	def __init__(self,size,server,player):
 		# Create a pygame window
 		self.size = size
+		self.screensaver_pos = (0,0,1,1)
 		self.set_colours()
 		self.set_fonts()
 		
@@ -280,8 +282,8 @@ class display:
 		
 		dx=500
 		dy=100
-		
 		st = pyg.Surface((dx,dy))
+		
 		y = 0
 		
 		# Display current time
@@ -315,8 +317,29 @@ class display:
 				st.blit(text,(x,y))
 				
 		
-		# TODO - bounce the clock, battery monitor, track info and album art around
-		self.surf.blit(st,(randrange(tx-dx),randrange(ty-dy)))
+		# Move it around
+		svx = self.screensaver_pos[2]
+		svy = self.screensaver_pos[3]
+		speed = 53
+		sx = self.screensaver_pos[0]+svx*speed
+		sy = self.screensaver_pos[1]+svy*speed
+		# TODO - get actual box size
+		if sx>=(tx-dx):
+			sx=tx-dx
+			svx=-svx
+		if sx<=0:
+			sx=0
+			svx=-svx
+		if sy>=(ty-dy):
+			sy = ty-dy
+			svy=-svy
+		if sy<=0:
+			sy = 0
+			svy=-svy
+		self.screensaver_pos = (sx,sy,svx,svy)
+		
+		self.surf.blit(st,(sx,sy))
+		
 		pyg.display.update()
 
 
@@ -362,7 +385,8 @@ class display:
 			if player.graphics!="simple":
 				dx = 70
 				dy = 50
-				self.option_button(tx-dx,0,dx,dy,"Esc","Back",True)
+				self.surf.blit(self.option_button(dx,dy,"Esc","Back",True),(tx-dx,0))
+
 					
 			pyg.display.update()
 		
