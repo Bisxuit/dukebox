@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Dukebox 2016-06-12
 # This file is the main control panel for dukebox that is called by the other interfaces.
 # It adds a layer of functionality over MPD for playing albums by genre and including radio stations.
@@ -620,17 +621,17 @@ class player:
 		if self.try_reading_battery:
 			# System dependent options (Crunch bang vs Ubuntu 14.04)
 			if os.path.isdir("/sys/class/power_supply/"):
-				if os.path.isfile("/sys/class/power_supply/BAT0/charge_now"):
+				if os.path.isfile("/sys/class/power_supply/BAT0/energy_now"):
 					battery = "BAT0"
-				elif os.path.isfile("/sys/class/power_supply/BAT1/charge_now"):
+				elif os.path.isfile("/sys/class/power_supply/BAT1/energy_now"):
 					battery = "BAT1"
 				else:
 					print "# Could not find battery in /sys/class/power_supply/"
 					self.try_reading_battery = False
 					return 0
 					
-				c = float(open('/sys/class/power_supply/'+battery+'/charge_now','r').read())
-				ct = float(open('/sys/class/power_supply/'+battery+'/charge_full','r').read())
+				c = float(open('/sys/class/power_supply/'+battery+'/energy_now','r').read())
+				ct = float(open('/sys/class/power_supply/'+battery+'/energy_full','r').read())
 				cs = open('/sys/class/power_supply/'+battery+'/status','r').read().lower().strip()
 				if cs=="charging" or cs=="charged" or cs=="full":
 					return c/ct

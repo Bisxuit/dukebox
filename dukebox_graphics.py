@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 # Dukebox 2016-06-12
 # This file provides the display class for Dukebox.py for running a Pygame based MPD client
 
@@ -12,6 +13,8 @@ class display:
 	def __init__(self,size,server,player):
 		# Create a pygame window
 		self.size = size
+		self.scale = 2
+		self.screensaver_pos = (0,0,1,1)
 		self.set_colours()
 		self.set_fonts()
 		
@@ -33,9 +36,9 @@ class display:
 	
 	
 	def set_fonts(self):
-		self.font1 = pyg.font.Font(pyg.font.match_font('arial'),48)
-		self.font2 = pyg.font.Font(pyg.font.match_font('arial'),24)
-		self.font3 = pyg.font.Font(pyg.font.match_font('arial'),13)
+		self.font1 = pyg.font.Font(pyg.font.match_font('arial'),48*self.scale)
+		self.font2 = pyg.font.Font(pyg.font.match_font('arial'),24*self.scale)
+		self.font3 = pyg.font.Font(pyg.font.match_font('arial'),13*self.scale)
 		
 		
 	def set_colours(self):
@@ -58,9 +61,9 @@ class display:
 		tx = int(self.size[0])
 		ty = int(self.size[1])
 		y = 0
-		gap1 = 6 # Between buttons and other elements
-		gap2 = 12 # Between groups of buttons 
-		gap3 = 2 # Between genre buttons
+		gap1 = 6*self.scale # Between buttons and other elements
+		gap2 = 12*self.scale # Between groups of buttons 
+		gap3 = 2*self.scale # Between genre buttons
 			
 		# Clear screen
 		s = pyg.Surface(self.size)
@@ -100,7 +103,7 @@ class display:
 					total_t = sum(t)
 				
 				y = y+dy+gap1
-				dy = 20
+				dy = 20*self.scale
 				if status.get("elapsed","") and song.get("time",""):
 					# Background for track time elapsed
 					dx = int(tx*float(status.get("elapsed"))/float(song.get("time")))
@@ -125,7 +128,7 @@ class display:
 							
 				if status.get("song","")!="":
 					dx = [0]*n
-					dy = 20
+					dy = 20*self.scale
 					if len(t)==n:
 						# Track lengths probably match current playlist
 						for i_x in range(0,n):
@@ -145,7 +148,7 @@ class display:
 								s.fill(self.colour['dark green'])
 							else:
 								s.fill(self.colour['grey'])
-							if player.graphics!="simple" and i_x!=i:
+							if player.graphics!="simple" and i_x!=i and len(player.track_names)>0:
 								text = self.font3.render(player.track_names[i_x],True,self.colour['white'])
 								s.blit(text,(gap1,0))
 							self.surf.blit(s, (int(sum(dx[:i_x])+gap1/2),y))
@@ -191,14 +194,14 @@ class display:
 		
 		# Battery indicator
 		dx = text.get_width()
-		dy = 30
+		dy = 30*self.scale
 		y = y+text.get_height()
 		s = self.battery_indicator(dx,dy,battery_level)
 		self.surf.blit(s,(tx-text.get_width(),y))
 
 		# Now work up from bottom (as it's less of an issue if the art gets covered up)
 		# Volume indicator
-		dy = 30
+		dy = 30*self.scale
 		y = ty-dy
 		v = int(status.get("volume"))
 		# TODO - make triangular under battery indicator
@@ -220,7 +223,7 @@ class display:
 				self.surf.blit(text,(tx-text.get_width(),ty-dy+(dy-text.get_height())/2))
 
 		# If not in clean/simple/car mode
-		dy = 60
+		dy = 60*self.scale
 		y = y-dy-gap2
 		
 		if player.graphics!="simple":
@@ -234,9 +237,13 @@ class display:
 				# Genre buttons - row 3
 				dx = float(tx)/12
 				y = y-dy-gap3
-				for i_x in range(0,12):
-					self.surf.blit(self.option_button(dx,dy,"F"+str(i_x+1),str(player.k[i_x][1]),player.genre=="All" or player.genre==player.k[i_x][1]),(int(dx*(i_x)),y))
-				
+				try:
+					for i_x in range(0,12):
+						# Crashes here on empty database
+						self.surf.blit(self.option_button(dx,dy,"F"+str(i_x+1),str(player.k[i_x][1]),player.genre=="All" or player.genre==player.k[i_x][1]),(int(dx*(i_x)),y))
+				except:
+					pass 
+										
 			# Command buttons - row 2
 			dx = float(tx)/9
 			y = y-dy-gap2
@@ -278,20 +285,20 @@ class display:
 		s.fill(self.colour['black'])
 		self.surf.blit(s, (0,0))
 		
-		dx=500
-		dy=100
-		
+		dx=500*self.scale
+		dy=100*self.scale
 		st = pyg.Surface((dx,dy))
+		
 		y = 0
 		
 		# Display current time
 		text = self.font1.render(str(datetime.datetime.now().strftime("%H:%M")),True,self.colour['white'])
 		st.blit(text,(0,y))
-		x=text.get_width() + 4
+		x=text.get_width() + 4*self.scale
 		y+=text.get_height()
 		
 		# Battery
-		s = self.battery_indicator(text.get_width(),30,battery_level)
+		s = self.battery_indicator(text.get_width(),30*self.scale,battery_level)
 		st.blit(s,(0,y))
 		
 		if status.get("state")=="play":
@@ -315,8 +322,29 @@ class display:
 				st.blit(text,(x,y))
 				
 		
-		# TODO - bounce the clock, battery monitor, track info and album art around
-		self.surf.blit(st,(randrange(tx-dx),randrange(ty-dy)))
+		# Move it around
+		svx = self.screensaver_pos[2]
+		svy = self.screensaver_pos[3]
+		speed = 53
+		sx = self.screensaver_pos[0]+svx*speed
+		sy = self.screensaver_pos[1]+svy*speed
+		# TODO - get actual box size
+		if sx>=(tx-dx):
+			sx=tx-dx
+			svx=-svx
+		if sx<=0:
+			sx=0
+			svx=-svx
+		if sy>=(ty-dy):
+			sy = ty-dy
+			svy=-svy
+		if sy<=0:
+			sy = 0
+			svy=-svy
+		self.screensaver_pos = (sx,sy,svx,svy)
+		
+		self.surf.blit(st,(sx,sy))
+		
 		pyg.display.update()
 
 
@@ -360,8 +388,8 @@ class display:
 				
 			# Back button
 			if player.graphics!="simple":
-				dx = 70
-				dy = 50
+				dx = 70*self.scale
+				dy = 50*self.scale
 				self.option_button(tx-dx,0,dx,dy,"Esc","Back",True)
 					
 			pyg.display.update()
@@ -374,7 +402,7 @@ class display:
 			col_edge = self.colour['green']
 		else:
 			col_edge = self.colour['grey']
-		gap = 2
+		gap = 2*self.scale
 		
 		# Outer border
 		st = pyg.Surface((dx-2,dy))
