@@ -284,7 +284,7 @@ class display:
 		s = pyg.Surface(self.size)
 		s.fill(self.colour['black'])
 		self.surf.blit(s, (0,0))
-		
+
 		dx=500*self.scale
 		dy=100*self.scale
 		st = pyg.Surface((dx,dy))

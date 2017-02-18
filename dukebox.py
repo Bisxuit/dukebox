@@ -11,7 +11,7 @@ import sys
 	
 	
 # TODO - disconnection behaviour (won't exit)
-# BUG - sometimes only musical albums are queued on startup
+# BUG - sometimes only musical albums are queued on startup (randomise not working properly)
 
 
 def main(server):
